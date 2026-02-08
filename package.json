@@ -1,0 +1,88 @@
+{
+  "name": "aimermaid",
+  "displayName": "AI Mermaid Editor",
+  "description": "可视化拖拽编辑 Mermaid 图表的 VS Code 插件",
+  "version": "0.1.0",
+  "publisher": "aimermaid",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "mermaid",
+    "diagram",
+    "sequence diagram",
+    "visual editor",
+    "drag and drop"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onLanguage:juliamarkdown",
+    "workspaceContains:**/*.md",
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aimermaid.openEditor",
+        "title": "🎨 可视化编辑 Mermaid",
+        "category": "AI Mermaid"
+      },
+      {
+        "command": "aimermaid.insertDiagram",
+        "title": "插入 Mermaid 图表",
+        "category": "AI Mermaid"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "aimermaid.insertDiagram",
+          "when": "resourceLangId == markdown",
+          "group": "aimermaid"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "npm run build:extension && npm run build:webview",
+    "build:extension": "esbuild src/extension/extension.ts --bundle --outfile=dist/extension/extension.js --external:vscode --format=cjs --platform=node",
+    "build:webview": "vite build",
+    "watch": "concurrently \"npm run watch:extension\" \"npm run watch:webview\"",
+    "watch:extension": "esbuild src/extension/extension.ts --bundle --outfile=dist/extension/extension.js --external:vscode --format=cjs --platform=node --watch",
+    "watch:webview": "vite build --watch",
+    "dev:webview": "vite",
+    "lint": "eslint src --ext ts,tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "esbuild": "^0.19.10",
+    "eslint": "^8.56.0",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  },
+  "dependencies": {
+    "@xyflow/react": "^12.0.0",
+    "lucide-react": "^0.303.0",
+    "mermaid": "^10.6.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zustand": "^4.4.7"
+  }
+}
