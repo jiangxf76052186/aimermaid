@@ -367,6 +367,7 @@ function diagramToEdges(diagram: SequenceDiagram): Edge[] {
 
 export const useDiagramStore = create<DiagramState & DiagramActions>((set, get) => ({
   diagram: {
+    type: 'sequence',
     participants: [],
     messages: [],
     notes: [],
