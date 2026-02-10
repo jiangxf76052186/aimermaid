@@ -124,3 +124,100 @@ These pure function tests serve as foundation for:
 ✓ **Comprehensive Coverage**: All branches of if-else chain are tested
 ✓ **Boundary Cases**: Empty strings, whitespace-only strings, and edge formatting covered
 
+
+## Task 1.2: codelens.ts Tests - Implementation Notes
+
+### Test File Location & Structure
+
+**Path**: `src/extension/__tests__/unit/codelens.test.ts`
+
+**Total Test Cases**: 30 tests organized into 8 describe blocks
+- Single block detection (4 tests)
+- Multiple blocks detection (3 tests) 
+- Nested block boundaries (4 tests)
+- CodeLens count validation (1 test)
+- CodeLens command & arguments (5 tests)
+- Edge cases - empty documents (2 tests)
+- Edge cases - no mermaid blocks (3 tests)
+- Edge cases - unclosed blocks (3 tests)
+- CodeLensProvider interface (2 tests)
+- Real-world scenarios (3 tests)
+
+### Mocking Strategy for vscode Module
+
+**Challenge**: The `vscode` module must be mocked before importing classes that depend on it. The standard `vi.mock()` approach requires a factory function that can't reference variables defined at module scope.
+
+**Solution**: Define mock classes directly in the vi.mock factory:
+
+```typescript
+vi.mock('vscode', () => ({
+  EventEmitter: class { /* implementation */ },
+  Range: class { /* implementation */ },
+  CodeLens: class { /* implementation */ },
+}));
+```
+
+This approach:
+- Creates proper constructor functions for `new vscode.Range()` and `new vscode.CodeLens()`
+- Avoids the "hoisting" error that occurs with `require()` or variable references
+- Works in ESM environment
+
+### Document Mock Enhancement
+
+The `createMockDocument()` mock needed these additional properties to match TypeScript's `TextDocument` interface:
+- `uri`: Full `Uri` object with `fsPath`, `scheme`, `authority`, `path`, `query`, `fragment`, `with()`, `toString()`, `toJSON()`
+- `encoding`: 'utf8'
+- `eol`: 1
+- `lineAt().rangeIncludingLineBreak`: Includes line break range
+
+### Testing Private Methods
+
+`findMermaidBlocks()` is private, so tests use:
+- **Indirect testing** through public `provideCodeLenses()` method
+- Verifying:
+  - Block count in returned CodeLens array
+  - Correct line numbers in Range objects
+  - Arguments passed to command handlers
+
+This validates block detection without needing `@ts-ignore` or reflection hacks.
+
+### Key Test Patterns
+
+**Single Responsibility**: Each test validates one scenario:
+- "should detect single block with flowchart" ✓
+- "should detect single block with case-insensitive mermaid" ✓
+
+**Describe Blocks by Category**: Tests grouped by functionality:
+- Detection patterns (single, multiple, boundaries)
+- Output validation (count, commands, arguments)
+- Error tolerance (empty docs, unclosed blocks)
+
+**Realistic Test Data**: Multi-line diagram content with participant/message definitions, not just minimal syntax.
+
+**Edge Case Coverage**:
+- Empty document: `[]`
+- Single empty line: `['']`
+- Unclosed blocks: Block opens but never closes
+- Mixed closed/unclosed: Some blocks complete, others don't
+- Non-mermaid blocks: Python, TypeScript, JavaScript code blocks
+
+### Test Execution Results
+
+All 30 tests pass with Vitest in ~80ms:
+```
+✓ src/extension/__tests__/unit/codelens.test.ts (30 tests)
+Test Files: 1 passed (1)
+Tests: 30 passed (30)
+```
+
+### Files Modified
+
+1. `/src/extension/__tests__/unit/codelens.test.ts` - NEW: Complete test suite (540 lines)
+2. `/src/extension/__tests__/mocks/document.ts` - UPDATED: Enhanced Uri object, added missing properties
+
+### Integration with Future Tests
+
+These unit tests establish a foundation for:
+- **Task 1.3** (extension.ts tests): Will test command handling that uses `provideCodeLenses()`
+- **Task 1.4** (webview.ts tests): Will mock WebviewPanel and test message passing
+- **E2E tests**: Will verify end-to-end flow from Markdown document through CodeLens to Webview

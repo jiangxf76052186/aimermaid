@@ -1,18 +1,28 @@
 import { vi } from 'vitest';
 
-/**
- * Helper function to create mock TextDocument instances for testing
- * Accepts an array of lines and returns a mock TextDocument with lineAt() support
- */
 export function createMockDocument(lines: string[] = []) {
+  const uri = {
+    fsPath: '/test.md',
+    scheme: 'file',
+    authority: '',
+    path: '/test.md',
+    query: '',
+    fragment: '',
+    with: vi.fn(function(this: any) { return this; }),
+    toString: vi.fn(() => 'file:///test.md'),
+    toJSON: vi.fn(() => ({ fsPath: '/test.md' })),
+  };
+
   return {
-    uri: { fsPath: '/test.md', scheme: 'file' },
+    uri,
     fileName: 'test.md',
     isUntitled: false,
     languageId: 'markdown',
     version: 1,
     isDirty: false,
     isClosed: false,
+    encoding: 'utf8',
+    eol: 1,
     lineCount: lines.length,
     lineAt: vi.fn((lineNumber: number) => {
       if (lineNumber < 0 || lineNumber >= lines.length) {
@@ -24,6 +34,10 @@ export function createMockDocument(lines: string[] = []) {
         range: {
           start: { line: lineNumber, character: 0 },
           end: { line: lineNumber, character: lines[lineNumber].length },
+        },
+        rangeIncludingLineBreak: {
+          start: { line: lineNumber, character: 0 },
+          end: { line: lineNumber + 1, character: 0 },
         },
         firstNonWhitespaceCharacterIndex: lines[lineNumber].search(/\S/),
         isEmptyOrWhitespace: /^\s*$/.test(lines[lineNumber]),
