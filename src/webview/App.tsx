@@ -9,6 +9,7 @@ import { vscodeApi } from './utils/vscode-api';
 import { ExtensionMessage, DiagramType } from '@shared/types';
 import { DiagramRegistry } from './core/registry/DiagramRegistry';
 import { FlowchartCanvas } from './diagrams/flowchart/components/FlowchartCanvas';
+import { StateCanvas } from './diagrams/stateDiagram/components/StateCanvas';
 import './core/initAdapters';
 
 const App: React.FC = () => {
@@ -74,6 +75,13 @@ const App: React.FC = () => {
   }, []);
 
   const isFlowchart = activeDiagramType === 'flowchart';
+  const isStateDiagram = activeDiagramType === 'state';
+
+  const renderCanvas = () => {
+    if (isFlowchart) return <FlowchartCanvas />;
+    if (isStateDiagram) return <StateCanvas />;
+    return <Canvas />;
+  };
 
   return (
     <ReactFlowProvider>
@@ -82,7 +90,7 @@ const App: React.FC = () => {
         <div className="flex flex-1 overflow-hidden">
           <ToolbarComponent />
           <div className="flex flex-col flex-1">
-            {isFlowchart ? <FlowchartCanvas /> : <Canvas />}
+            {renderCanvas()}
             <Preview />
           </div>
           <PropertyPanelComponent />

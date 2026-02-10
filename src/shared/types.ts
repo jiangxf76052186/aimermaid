@@ -9,6 +9,17 @@ export type {
   ClassDef,
   FlowchartDiagram,
 } from './types/flowchart';
+export type {
+  StateType,
+  DiagramDirection,
+  NotePosition as StateNotePosition,
+  State,
+  Transition,
+  StateNote,
+  StateClassDef,
+  StateClassAssignment,
+  StateDiagram,
+} from './types/stateDiagram';
 
 export type MessageType =
   | 'sync'
