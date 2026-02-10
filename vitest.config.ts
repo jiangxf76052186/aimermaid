@@ -12,6 +12,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    exclude: ['src/**/e2e/**', 'node_modules'],
     setupFiles: ['./src/webview/__tests__/setup.ts'],
   },
 });

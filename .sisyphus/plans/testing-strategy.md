@@ -457,7 +457,7 @@ test: {
 - [x] **Task 2.1**: Canvas 组件测试 - Canvas.tsx (6h, 中优先级) ✅
 - [x] **Task 2.2**: PropertyPanel 组件测试 - PropertyPanel.tsx (5h, 中优先级) ✅
 - [x] **Task 2.3**: ContextMenu 组件测试 - ContextMenu.tsx (3h, 中优先级) ✅
-- [ ] **Task 3.1**: E2E 基础架构 - fixtures/, helpers/ (4h, 中优先级)
+- [x] **Task 3.1**: E2E 基础架构 - fixtures/, helpers/ (4h, 中优先级) ✅
 - [ ] **Task 3.2**: 核心工作流 E2E - workflow.test.ts (6h, 中优先级)
 - [ ] **Task 4.1**: 覆盖率配置 - vitest.config.ts (1h, 低优先级)
 - [ ] **Task 4.2**: 质量验证 - 全测试套件 (2h, 低优先级)
