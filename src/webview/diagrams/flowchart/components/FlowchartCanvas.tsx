@@ -9,11 +9,13 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import ShapeNode from '../nodes/ShapeNode';
+import SubgraphNode from '../nodes/SubgraphNode';
 import FlowEdge from '../edges/FlowEdge';
 import { useFlowchartStore } from '../store';
 
 const nodeTypes = {
   shape: ShapeNode,
+  subgraph: SubgraphNode,
 };
 
 const edgeTypes = {

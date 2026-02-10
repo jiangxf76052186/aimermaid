@@ -2,6 +2,7 @@ import type { Node, Edge } from '@xyflow/react';
 import type { DiagramAdapter } from '@shared/types/diagram';
 import type { FlowchartDiagram } from '@shared/types/flowchart';
 import ShapeNode from './nodes/ShapeNode';
+import SubgraphNode from './nodes/SubgraphNode';
 import FlowEdge from './edges/FlowEdge';
 import { parseFlowchart } from './utils/parser';
 import { generateFlowchart } from './utils/generator';
@@ -15,23 +16,73 @@ const FlowchartPropertyPanel: React.FC = () => {
 };
 
 function stateToNodes(diagram: FlowchartDiagram): Node[] {
-  return diagram.nodes.map((node) => ({
-    id: node.id,
-    type: 'shape',
-    position: node.position,
-    data: {
-      label: node.text,
-      shape: node.shape,
-      classes: node.classes,
-      styles: node.styles,
-      icon: node.icon,
-    },
-    style: {
-      width: node.width ?? 120,
-      height: node.height ?? 60,
-    },
-    draggable: true,
-  }));
+  const nodes: Node[] = [];
+
+  const nodeMap = new Map(diagram.nodes.map(n => [n.id, n]));
+
+  diagram.nodes.forEach((node) => {
+    nodes.push({
+      id: node.id,
+      type: 'shape',
+      position: node.position,
+      data: {
+        label: node.text,
+        shape: node.shape,
+        classes: node.classes,
+        styles: node.styles,
+        icon: node.icon,
+      },
+      style: {
+        width: node.width ?? 120,
+        height: node.height ?? 60,
+      },
+      draggable: true,
+    });
+  });
+
+  diagram.subgraphs.forEach((subgraph) => {
+    const nodeIds = subgraph.nodeIds || [];
+    nodes.push({
+      id: subgraph.id,
+      type: 'subgraph',
+      position: subgraph.position || { x: 50, y: 50 },
+      data: {
+        label: subgraph.title,
+        direction: subgraph.direction,
+      },
+      style: {
+        width: subgraph.width ?? 300,
+        height: subgraph.height ?? 200,
+      },
+      draggable: true,
+    });
+
+    nodeIds.forEach((nodeId) => {
+      const node = nodeMap.get(nodeId);
+      if (node) {
+        nodes.push({
+          id: node.id,
+          type: 'shape',
+          position: node.position,
+          parentId: subgraph.id,
+          data: {
+            label: node.text,
+            shape: node.shape,
+            classes: node.classes,
+            styles: node.styles,
+            icon: node.icon,
+          },
+          style: {
+            width: node.width ?? 120,
+            height: node.height ?? 60,
+          },
+          draggable: true,
+        });
+      }
+    });
+  });
+
+  return nodes;
 }
 
 function stateToEdges(diagram: FlowchartDiagram): Edge[] {
@@ -63,6 +114,7 @@ export const FlowchartAdapter: DiagramAdapter<FlowchartDiagram> = {
 
   nodeTypes: {
     shape: ShapeNode,
+    subgraph: SubgraphNode,
   },
 
   edgeTypes: {

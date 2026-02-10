@@ -195,6 +195,17 @@ export interface RFEdgeData {
   length?: number;
 }
 
+/**
+ * 子图节点数据
+ * Subgraph Node Data Structure
+ */
+export interface RFSubgraphData {
+  /** 子图标题 */
+  label: string;
+  /** 方向覆盖 */
+  direction?: Direction;
+}
+
 // ==================== 工具函数类型 ====================
 
 /**
