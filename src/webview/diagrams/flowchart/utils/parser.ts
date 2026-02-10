@@ -106,7 +106,7 @@ export function parseFlowchart(code: string): FlowchartDiagram {
 
     // 解析节点定义
     const nodeMatch = line.match(
-      /^(\w+)\s*(\[[^\]]*\]|\([^)]*\)|{[^}]*}|\(\([^)]*\)\)|\[\/[^\/]*\/\]|\[\\[^\\]*\\\]|\[\([^)]*\)\]|>>\[[^\]]*\]|\{\{[^}]*\}\}|\[\[[^\]]*\]\])/
+      /^(\w+)\s*(\[[^\]]*\]|\([^)]*\)|{[^}]*}|\(\([^)]*\)\)|\[\/[^\/]*\/\]|\[\\[^\\]*\\\]|\[\([^)]*\)\]|>>\[[^\]]*\]|\{\{[^}]*\}\}|\[\[[^\]]*\]\]|>[^\]]*\])/
     );
     if (nodeMatch) {
       const node = parseNodeDefinition(nodeMatch[1], nodeMatch[2]);
@@ -137,13 +137,63 @@ export function parseFlowchart(code: string): FlowchartDiagram {
       // 链式: A --> B --> C (稍后处理)
     ];
 
+    let edgeMatched = false;
     for (const pattern of edgePatterns) {
       const match = line.match(pattern.regex);
       if (match) {
+        edgeMatched = true;
         const edges = pattern.handler(match);
         diagram.edges.push(...edges);
+        
+        edges.forEach(edge => {
+          if (!diagram.nodes.find(n => n.id === edge.from)) {
+            diagram.nodes.push({
+              id: edge.from,
+              text: edge.from,
+              shape: 'rect',
+              position: { x: 0, y: 0 }
+            });
+          }
+          if (!diagram.nodes.find(n => n.id === edge.to)) {
+            diagram.nodes.push({
+              id: edge.to,
+              text: edge.to,
+              shape: 'rect',
+              position: { x: 0, y: 0 }
+            });
+          }
+          
+          if (currentSubgraph) {
+            if (!currentSubgraph.nodeIds.includes(edge.from)) {
+              currentSubgraph.nodeIds.push(edge.from);
+            }
+            if (!currentSubgraph.nodeIds.includes(edge.to)) {
+              currentSubgraph.nodeIds.push(edge.to);
+            }
+          }
+        });
+
         break;
       }
+    }
+    if (edgeMatched) continue;
+
+    if (line.match(/^\w+$/)) {
+      const id = line.trim();
+      if (!diagram.nodes.find(n => n.id === id)) {
+        diagram.nodes.push({
+          id,
+          text: id,
+          shape: 'rect',
+          position: { x: 0, y: 0 }
+        });
+      }
+      if (currentSubgraph) {
+        if (!currentSubgraph.nodeIds.includes(id)) {
+          currentSubgraph.nodeIds.push(id);
+        }
+      }
+      continue;
     }
   }
 
@@ -180,10 +230,11 @@ function detectShape(def: string): NodeShape {
     return 'circle';
   }
   if (def.startsWith('(')) return 'rounded';
-  if (def.startsWith('{')) return 'diamond';
   if (def.startsWith('{{')) return 'hexagon';
+  if (def.startsWith('{')) return 'diamond';
   if (def.startsWith('[(')) return 'cylinder';
-  if (def.startsWith('[\\') || def.startsWith('[\\/')) {
+  if (def.startsWith('[\\')) {
+    if (def.endsWith('/]')) return 'trapezoid-alt';
     return 'parallelogram-alt';
   }
   if (def.startsWith('[/')) {
@@ -191,7 +242,7 @@ function detectShape(def: string): NodeShape {
     if (def.includes('\\')) return 'trapezoid';
     return 'parallelogram';
   }
-  if (def.startsWith('>[')) return 'asymmetric';
+  if (def.startsWith('>')) return 'asymmetric';
   if (def.startsWith('[')) return 'rect';
 
   // 默认返回矩形
@@ -203,10 +254,38 @@ function detectShape(def: string): NodeShape {
  * Extract node text
  */
 function extractText(def: string): string {
-  // 移除形状标记，提取文本内容
-  const matches = def.match(/(?:\[|\(|\{|>)(.+?)(?:\]|\)|\}|<)/);
-  if (!matches) return '';
-  return matches[1]?.trim() || '';
+  let text = def;
+  
+  if (text.startsWith('(((')) text = text.substring(3);
+  else if (text.startsWith('((')) text = text.substring(2);
+  else if (text.startsWith('[[')) text = text.substring(2);
+  else if (text.startsWith('{{')) text = text.substring(2);
+  else if (text.startsWith('[(')) text = text.substring(2);
+  else if (text.startsWith('[/')) text = text.substring(2);
+  else if (text.startsWith('[\\')) text = text.substring(2);
+  else if (text.startsWith('>')) text = text.substring(1);
+  else if (text.startsWith('[')) text = text.substring(1);
+  else if (text.startsWith('(')) text = text.substring(1);
+  else if (text.startsWith('{')) text = text.substring(1);
+
+  if (text.endsWith(')))')) text = text.substring(0, text.length - 3);
+  else if (text.endsWith('))')) text = text.substring(0, text.length - 2);
+  else if (text.endsWith(']]')) text = text.substring(0, text.length - 2);
+  else if (text.endsWith('}}')) text = text.substring(0, text.length - 2);
+  else if (text.endsWith(')]')) text = text.substring(0, text.length - 2);
+  else if (text.endsWith('/]')) text = text.substring(0, text.length - 2);
+  else if (text.endsWith('\\]')) text = text.substring(0, text.length - 2);
+  else if (text.endsWith(']')) text = text.substring(0, text.length - 1);
+  else if (text.endsWith(')')) text = text.substring(0, text.length - 1);
+  else if (text.endsWith('}')) text = text.substring(0, text.length - 1);
+
+  text = text.trim();
+  
+  if (text.startsWith('"') && text.endsWith('"')) {
+    text = text.substring(1, text.length - 1);
+  }
+  
+  return text;
 }
 
 /**
@@ -254,12 +333,16 @@ function parseEdgeWithText(
   match: RegExpMatchArray
 ): FlowEdge[] {
   const [, from, arrowType, text, to] = match;
+  let cleanText = text.trim();
+  if (cleanText.startsWith('"') && cleanText.endsWith('"')) {
+    cleanText = cleanText.substring(1, cleanText.length - 1);
+  }
   return [
     {
       id: `e_${from}_${to}_${Date.now()}`,
       from,
       to,
-      text: text.trim(),
+      text: cleanText,
       type: parseArrowType(arrowType) as EdgeType,
     },
   ];
@@ -273,12 +356,16 @@ function parseEdgeWithColonText(
   match: RegExpMatchArray
 ): FlowEdge[] {
   const [, from, arrowType, to, text] = match;
+  let cleanText = text ? text.trim() : undefined;
+  if (cleanText && cleanText.startsWith('"') && cleanText.endsWith('"')) {
+    cleanText = cleanText.substring(1, cleanText.length - 1);
+  }
   return [
     {
       id: `e_${from}_${to}_${Date.now()}`,
       from,
       to,
-      text: text ? text.trim() : undefined,
+      text: cleanText,
       type: parseArrowType(arrowType) as EdgeType,
     },
   ];
