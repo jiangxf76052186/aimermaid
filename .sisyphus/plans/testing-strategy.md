@@ -452,7 +452,7 @@ test: {
 - [x] **Task 1.1**: Extension 测试基础设施 - mocks/, fixtures/ (2h, 高优先级) ✅
 - [x] **Task 1.1**: diagram-detector 测试 - utils/ (1h, 高优先级) ✅
 - [x] **Task 1.2**: codelens 测试 - codelens.ts (3h, 高优先级) ✅
-- [ ] **Task 1.3**: extension 集成测试 - extension.ts (4h, 高优先级)
+- [x] **Task 1.3**: extension 集成测试 - extension.ts (4h, 高优先级) ✅
 - [ ] **Task 1.4**: webview 集成测试 - webview.ts (5h, 高优先级)
 - [ ] **Task 2.1**: Canvas 组件测试 - Canvas.tsx (6h, 中优先级)
 - [ ] **Task 2.2**: PropertyPanel 组件测试 - PropertyPanel.tsx (5h, 中优先级)
