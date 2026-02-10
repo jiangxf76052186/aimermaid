@@ -8,6 +8,7 @@ import { useEditorStore } from './stores/editorStore';
 import { vscodeApi } from './utils/vscode-api';
 import { ExtensionMessage, DiagramType } from '@shared/types';
 import { DiagramRegistry } from './core/registry/DiagramRegistry';
+import { FlowchartCanvas } from './diagrams/flowchart/components/FlowchartCanvas';
 import './core/initAdapters';
 
 const App: React.FC = () => {
@@ -72,6 +73,8 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const isFlowchart = activeDiagramType === 'flowchart';
+
   return (
     <ReactFlowProvider>
       <div className="flex flex-col h-screen bg-vscode-bg text-vscode-fg">
@@ -79,7 +82,7 @@ const App: React.FC = () => {
         <div className="flex flex-1 overflow-hidden">
           <ToolbarComponent />
           <div className="flex flex-col flex-1">
-            <Canvas />
+            {isFlowchart ? <FlowchartCanvas /> : <Canvas />}
             <Preview />
           </div>
           <PropertyPanelComponent />

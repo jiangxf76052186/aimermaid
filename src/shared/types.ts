@@ -1,4 +1,14 @@
 export type { DiagramAdapter, BaseDiagramState } from './types/diagram';
+export type {
+  Direction,
+  NodeShape,
+  EdgeType,
+  FlowNode,
+  FlowEdge,
+  Subgraph,
+  ClassDef,
+  FlowchartDiagram,
+} from './types/flowchart';
 
 export type MessageType =
   | 'sync'
