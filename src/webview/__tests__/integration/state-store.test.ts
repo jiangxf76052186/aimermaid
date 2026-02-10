@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useStateStore } from '@/webview/diagrams/stateDiagram/store';
 
 describe('State Diagram Store Integration Tests', () => {
@@ -86,13 +86,18 @@ describe('State Diagram Store Integration Tests', () => {
     });
 
     it('should generate unique state IDs', () => {
+      const now = Date.now();
+      const spy = vi.spyOn(Date, 'now');
+      spy.mockReturnValueOnce(now);
       useStateStore.getState().addState('normal', 'A', { x: 0, y: 0 });
       const firstStateId = useStateStore.getState().diagram.states[0].id;
 
+      spy.mockReturnValueOnce(now + 1);
       useStateStore.getState().addState('normal', 'B', { x: 100, y: 0 });
       const secondStateId = useStateStore.getState().diagram.states[1].id;
 
       expect(firstStateId).not.toEqual(secondStateId);
+      spy.mockRestore();
     });
 
     it('should push history when adding state', () => {
