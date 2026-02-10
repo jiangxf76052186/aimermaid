@@ -4,6 +4,10 @@
   "description": "可视化拖拽编辑 Mermaid 图表的 VS Code 插件",
   "version": "0.1.0",
   "publisher": "aimermaid",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aimermaid/aimermaid"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
