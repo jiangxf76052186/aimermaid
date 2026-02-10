@@ -9,7 +9,7 @@ sequenceDiagram
         alt condition
             A->>B: New Message
             A->>B: New Message
+            A->>B: New Message
         end
-        A->>B: New Message
     end
 ```
