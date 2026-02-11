@@ -64,7 +64,8 @@
     "lint": "eslint src --ext ts,tsx",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -77,6 +78,7 @@
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "^4.0.18",
     "@vscode/test-electron": "^2.5.2",
     "autoprefixer": "^10.4.16",
     "concurrently": "^8.2.2",
