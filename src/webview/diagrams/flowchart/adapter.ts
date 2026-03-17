@@ -6,14 +6,8 @@ import SubgraphNode from './nodes/SubgraphNode';
 import FlowEdge from './edges/FlowEdge';
 import { parseFlowchart } from './utils/parser';
 import { generateFlowchart } from './utils/generator';
-
-const FlowchartToolbar: React.FC = () => {
-  return null;
-};
-
-const FlowchartPropertyPanel: React.FC = () => {
-  return null;
-};
+import { FlowchartToolbar } from './components/FlowchartToolbar';
+import FlowchartPropertyPanel from './components/FlowchartPropertyPanel';
 
 function stateToNodes(diagram: FlowchartDiagram): Node[] {
   const nodes: Node[] = [];
@@ -109,7 +103,7 @@ export const FlowchartAdapter: DiagramAdapter<FlowchartDiagram> = {
 
   detect: (code: string) => {
     const firstLine = code.trim().split('\n')[0].toLowerCase().trim();
-    return firstLine.startsWith('flowchart');
+    return firstLine.startsWith('flowchart') || firstLine.startsWith('graph');
   },
 
   nodeTypes: {
@@ -129,6 +123,7 @@ export const FlowchartAdapter: DiagramAdapter<FlowchartDiagram> = {
 
   createInitialState: () => ({
     type: 'flowchart',
+    keyword: 'flowchart' as const,
     direction: 'TB',
     nodes: [],
     edges: [],

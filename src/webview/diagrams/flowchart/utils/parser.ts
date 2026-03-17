@@ -29,6 +29,7 @@ export function parseFlowchart(code: string): FlowchartDiagram {
 
   const diagram: FlowchartDiagram = {
     type: 'flowchart',
+    keyword: 'flowchart',
     direction: 'TB',
     nodes: [],
     edges: [],
@@ -42,15 +43,19 @@ export function parseFlowchart(code: string): FlowchartDiagram {
   for (const line of lines) {
     // 解析方向声明
     const directionMatch = line.match(
-      /^flowchart\s+(TB|TD|BT|RL|LR)/i
+      /^(?:flowchart|graph)\s+(TB|TD|BT|RL|LR)/i
     );
     if (directionMatch) {
       diagram.direction = directionMatch[1].toUpperCase() as Direction;
+      const keyword = line.match(/^(flowchart|graph)\s/i);
+      if (keyword) {
+        diagram.keyword = keyword[1].toLowerCase() as 'flowchart' | 'graph';
+      }
       continue;
     }
 
     // 解析 classDef
-    const classDefMatch = line.match(/^classDef\s+(\w+)\s+(.+)$/);
+    const classDefMatch = line.match(/^classDef\s+([\w\u4e00-\u9fff]+)\s+(.+)$/);
     if (classDefMatch) {
       diagram.classDefs.push(
         parseClassDef(classDefMatch[1], classDefMatch[2])
@@ -59,7 +64,7 @@ export function parseFlowchart(code: string): FlowchartDiagram {
     }
 
     // 解析 class 应用
-    const classMatch = line.match(/^class\s+([\w,]+)\s+(\w+)$/);
+    const classMatch = line.match(/^class\s+([\w\u4e00-\u9fff,]+)\s+([\w\u4e00-\u9fff]+)$/);
     if (classMatch) {
       applyClass(diagram, classMatch[1], classMatch[2]);
       continue;
@@ -67,7 +72,7 @@ export function parseFlowchart(code: string): FlowchartDiagram {
 
     // 解析 subgraph 开始
     const subgraphMatch = line.match(
-      /^subgraph\s+(\w+)(?:\s*\["?([^"\]]*)"?\])?/
+      /^subgraph\s+([\w\u4e00-\u9fff]+)(?:\s*\["?([^"\]]*)"?\])?/
     );
     if (subgraphMatch) {
       const subgraph: Subgraph = {
@@ -106,7 +111,7 @@ export function parseFlowchart(code: string): FlowchartDiagram {
 
     // 解析节点定义
     const nodeMatch = line.match(
-      /^(\w+)\s*(\[[^\]]*\]|\([^)]*\)|{[^}]*}|\(\([^)]*\)\)|\[[/][^/]*[/]\]|\[[^\\]*\\\]|\[\([^)]*\)\]|>>\[[^\]]*\]|\{\{[^}]*\}\}|\[\[[^\]]*\]\]|>[^\]]*\])/
+      /^([\w\u4e00-\u9fff]+)\s*(\[[^\]]*\]|\([^)]*\)|{[^}]*}|\(\([^)]*\)\)|\[[/][^/]*[/]\]|\[[^\\]*\\\]|\[\([^)]*\)\]|>>\[[^\]]*\]|\{\{[^}]*\}\}|\[\[[^\]]*\]\]|>[^\]]*\])/
     );
     if (nodeMatch) {
       const node = parseNodeDefinition(nodeMatch[1], nodeMatch[2]);
@@ -121,17 +126,17 @@ export function parseFlowchart(code: string): FlowchartDiagram {
     const edgePatterns = [
       // 带文本的格式: A -->|text| B
       {
-        regex: /^(\w+)\s*(-->|---|-.->|-.-|==>|===|~~~)\s*\|([^|]*)\|\s*(\w+)/,
+        regex: /^([\w\u4e00-\u9fff]+)\s*(-->|---|-.->|-.-|==>|===|~~~)\s*\|([^|]*)\|\s*([\w\u4e00-\u9fff]+)/,
         handler: parseEdgeWithText,
       },
       // 带冒号文本的格式: A --> B: text
       {
-        regex: /^(\w+)\s*(-->|---|-.->|-.-|==>|===|~~~)\s*(\w+)\s*(?::\s*([^;]+))?/,
+        regex: /^([\w\u4e00-\u9fff]+)\s*(-->|---|-.->|-.-|==>|===|~~~)\s*([\w\u4e00-\u9fff]+)\s*(?::\s*([^;]+))?/,
         handler: parseEdgeWithColonText,
       },
       // 标准格式: A --> B
       {
-        regex: /^(\w+)\s*(-->|---|-.->|-.-|==>|===|~~~)\s*(\w+)/,
+        regex: /^([\w\u4e00-\u9fff]+)\s*(-->|---|-.->|-.-|==>|===|~~~)\s*([\w\u4e00-\u9fff]+)/,
         handler: parseSimpleEdge,
       },
       // 链式: A --> B --> C (稍后处理)
@@ -178,7 +183,7 @@ export function parseFlowchart(code: string): FlowchartDiagram {
     }
     if (edgeMatched) continue;
 
-    if (line.match(/^\w+$/)) {
+    if (line.match(/^[\w\u4e00-\u9fff]+$/)) {
       const id = line.trim();
       if (!diagram.nodes.find(n => n.id === id)) {
         diagram.nodes.push({

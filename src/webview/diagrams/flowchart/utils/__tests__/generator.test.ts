@@ -6,6 +6,7 @@ import type { FlowchartDiagram, NodeShape, EdgeType } from '@shared/types/flowch
 describe('Flowchart Generator', () => {
   const createBaseDiagram = (): FlowchartDiagram => ({
     type: 'flowchart',
+    keyword: 'flowchart',
     direction: 'TB',
     nodes: [],
     edges: [],

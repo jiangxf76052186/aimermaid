@@ -205,7 +205,7 @@ export function generateFlowchart(diagram: FlowchartDiagram): string {
   const lines: string[] = [];
 
   // 头部声明
-  lines.push(`flowchart ${diagram.direction}`);
+  lines.push(`${diagram.keyword} ${diagram.direction}`);
   lines.push('');
 
   // 跟踪已定义的节点

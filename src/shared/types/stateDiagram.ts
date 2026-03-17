@@ -75,6 +75,10 @@ export interface Transition {
   label?: string;
   /** 定义顺序 */
   order: number;
+  /** 源节点连接锚点 Handle ID */
+  sourceHandle?: string;
+  /** 目标节点连接锚点 Handle ID */
+  targetHandle?: string;
 }
 
 /**

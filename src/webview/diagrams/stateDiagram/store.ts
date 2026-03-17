@@ -40,7 +40,7 @@ export interface StateStoreActions {
   updateState: (id: string, updates: Partial<State>) => void;
   removeState: (id: string) => void;
 
-  addTransition: (from: string, to: string, label?: string) => void;
+  addTransition: (from: string, to: string, label?: string, sourceHandle?: string, targetHandle?: string) => void;
   updateTransition: (id: string, updates: Partial<Transition>) => void;
   removeTransition: (id: string) => void;
 
@@ -141,16 +141,42 @@ function diagramToNodes(diagram: StateDiagram): Node[] {
   return nodes;
 }
 
+function computeHandles(
+  sourceState: State | undefined,
+  targetState: State | undefined,
+): { sourceHandle: string; targetHandle: string } {
+  if (!sourceState || !targetState) {
+    return { sourceHandle: 'source-bottom', targetHandle: 'target-top' };
+  }
+  const dx = targetState.position.x - sourceState.position.x;
+  const dy = targetState.position.y - sourceState.position.y;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    return dx > 0
+      ? { sourceHandle: 'source-right', targetHandle: 'target-left' }
+      : { sourceHandle: 'source-left', targetHandle: 'target-right' };
+  }
+  return dy > 0
+    ? { sourceHandle: 'source-bottom', targetHandle: 'target-top' }
+    : { sourceHandle: 'source-top', targetHandle: 'target-bottom' };
+}
+
 function diagramToEdges(diagram: StateDiagram): Edge[] {
-  return diagram.transitions.map((transition) => ({
-    id: transition.id,
-    source: transition.from,
-    target: transition.to,
-    type: 'transition',
-    data: {
-      label: transition.label,
-    } as unknown as Record<string, unknown>,
-  }));
+  const stateMap = new Map(diagram.states.map(s => [s.id, s]));
+  return diagram.transitions.map((transition) => {
+    const sourceHandle = transition.sourceHandle ?? computeHandles(stateMap.get(transition.from), stateMap.get(transition.to)).sourceHandle;
+    const targetHandle = transition.targetHandle ?? computeHandles(stateMap.get(transition.from), stateMap.get(transition.to)).targetHandle;
+    return {
+      id: transition.id,
+      source: transition.from,
+      target: transition.to,
+      sourceHandle,
+      targetHandle,
+      type: 'transition',
+      data: {
+        label: transition.label,
+      } as unknown as Record<string, unknown>,
+    };
+  });
 }
 
 export const useStateStore = create<StateStoreState & StateStoreActions>((set, get) => ({
@@ -247,7 +273,7 @@ export const useStateStore = create<StateStoreState & StateStoreActions>((set, g
     });
   },
 
-  addTransition: (from, to, label) => {
+  addTransition: (from, to, label, sourceHandle, targetHandle) => {
     const { diagram, pushHistory } = get();
     pushHistory();
 
@@ -257,6 +283,8 @@ export const useStateStore = create<StateStoreState & StateStoreActions>((set, g
       to,
       label,
       order: diagram.transitions.length,
+      sourceHandle,
+      targetHandle,
     };
 
     const newDiagram = {
@@ -410,7 +438,13 @@ export const useStateStore = create<StateStoreState & StateStoreActions>((set, g
 
   onConnect: (connection) => {
     if (connection.source && connection.target) {
-      get().addTransition(connection.source, connection.target);
+      get().addTransition(
+        connection.source,
+        connection.target,
+        undefined,
+        connection.sourceHandle ?? undefined,
+        connection.targetHandle ?? undefined,
+      );
     }
   },
 

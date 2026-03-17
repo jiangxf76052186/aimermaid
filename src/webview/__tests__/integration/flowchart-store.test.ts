@@ -6,6 +6,7 @@ describe('useFlowchartStore', () => {
     useFlowchartStore.setState({
       diagram: {
         type: 'flowchart',
+        keyword: 'flowchart',
         direction: 'TB',
         nodes: [],
         edges: [],
@@ -422,6 +423,7 @@ describe('useFlowchartStore', () => {
       useFlowchartStore.setState({
         diagram: {
           type: 'flowchart',
+          keyword: 'flowchart',
           direction: 'TB',
           nodes: [],
           edges: [],

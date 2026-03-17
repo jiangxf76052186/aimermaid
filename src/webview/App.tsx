@@ -7,13 +7,13 @@ import { useDiagramStore } from './stores/diagramStore';
 import { useEditorStore } from './stores/editorStore';
 import { vscodeApi } from './utils/vscode-api';
 import { ExtensionMessage, DiagramType } from '@shared/types';
+import { getActiveStore } from './hooks/useActiveStore';
 import { DiagramRegistry } from './core/registry/DiagramRegistry';
 import { FlowchartCanvas } from './diagrams/flowchart/components/FlowchartCanvas';
 import { StateCanvas } from './diagrams/stateDiagram/components/StateCanvas';
 import './core/initAdapters';
 
 const App: React.FC = () => {
-  const { loadFromMermaid, setTheme } = useDiagramStore();
   const { activeDiagramType, setActiveDiagramType } = useEditorStore();
 
   const adapter = useMemo(() => {
@@ -27,16 +27,21 @@ const App: React.FC = () => {
     const handleMessage = (message: ExtensionMessage) => {
       console.log('[AIMermaid] Received message:', message);
       switch (message.type) {
-        case 'init':
+        case 'init': {
           console.log('[AIMermaid] Init with code:', message.data.mermaidCode);
           console.log('[AIMermaid] Diagram type:', message.data.diagramType);
-          setActiveDiagramType(message.data.diagramType as DiagramType);
-          loadFromMermaid(message.data.mermaidCode);
-          setTheme(message.data.theme as 'light' | 'dark');
+          const diagramType = message.data.diagramType as DiagramType;
+          setActiveDiagramType(diagramType);
+          const store = getActiveStore(diagramType);
+          store.getState().loadFromMermaid(message.data.mermaidCode);
+          store.getState().setTheme(message.data.theme as 'light' | 'dark');
           break;
-        case 'themeChanged':
-          setTheme(message.data.theme as 'light' | 'dark');
+        }
+        case 'themeChanged': {
+          const store = getActiveStore(activeDiagramType);
+          store.getState().setTheme(message.data.theme as 'light' | 'dark');
           break;
+        }
       }
     };
 
@@ -45,20 +50,25 @@ const App: React.FC = () => {
     vscodeApi.ready();
 
     return unsubscribe;
-  }, [loadFromMermaid, setTheme, setActiveDiagramType]);
+  }, [activeDiagramType]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const currentType = useEditorStore.getState().activeDiagramType;
+      const activeStore = getActiveStore(currentType);
+      
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
-        useDiagramStore.getState().undo();
+        activeStore.getState().undo();
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
         e.preventDefault();
-        useDiagramStore.getState().redo();
+        activeStore.getState().redo();
       } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        useDiagramStore.getState().recalculateAllBlockContents();
-        const code = useDiagramStore.getState().toMermaid();
+        if (currentType === 'sequence') {
+          useDiagramStore.getState().recalculateAllBlockContents();
+        }
+        const code = activeStore.getState().toMermaid();
         vscodeApi.save(code);
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         const target = e.target as HTMLElement;
@@ -66,7 +76,7 @@ const App: React.FC = () => {
           return;
         }
         e.preventDefault();
-        useDiagramStore.getState().deleteSelected();
+        activeStore.getState().deleteSelected();
       }
     };
 

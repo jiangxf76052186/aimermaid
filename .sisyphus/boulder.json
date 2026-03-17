@@ -1,6 +1,9 @@
 {
-  "active_plan": "/data/dev/aimermaid/.sisyphus/plans/testing-strategy.md",
-  "started_at": "2026-02-10T15:15:00.000Z",
-  "session_ids": ["ses_3b88c179fffeWausR2O13vnBG0"],
-  "plan_name": "testing-strategy"
+  "active_plan": "/data/dev/aimermaid/.sisyphus/plans/fix-diagram-store-routing.md",
+  "started_at": "2026-02-11T06:17:17.419Z",
+  "session_ids": [
+    "ses_3b531ad3affeWvt5HSA0Z22l8W"
+  ],
+  "plan_name": "fix-diagram-store-routing",
+  "agent": "atlas"
 }

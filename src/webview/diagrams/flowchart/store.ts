@@ -32,7 +32,7 @@ export interface FlowchartActions {
   updateNode: (id: string, updates: Partial<FlowNode>) => void;
   removeNode: (id: string) => void;
 
-  addEdge: (from: string, to: string, type?: EdgeType, text?: string) => void;
+  addEdge: (from: string, to: string, type?: EdgeType, text?: string, sourceHandle?: string, targetHandle?: string) => void;
   updateEdge: (id: string, updates: Partial<FlowEdge>) => void;
   removeEdge: (id: string) => void;
 
@@ -55,6 +55,9 @@ export interface FlowchartActions {
   pushHistory: () => void;
 }
 
+const DEFAULT_NODE_WIDTH = 120;
+const DEFAULT_NODE_HEIGHT = 60;
+
 function diagramToNodes(diagram: FlowchartDiagram): Node[] {
   return diagram.nodes.map(node => ({
     id: node.id,
@@ -68,31 +71,58 @@ function diagramToNodes(diagram: FlowchartDiagram): Node[] {
       icon: node.icon,
     } as unknown as Record<string, unknown>,
     style: {
-      width: node.width,
-      height: node.height,
+      width: node.width ?? DEFAULT_NODE_WIDTH,
+      height: node.height ?? DEFAULT_NODE_HEIGHT,
     },
     draggable: true,
   }));
 }
 
+function computeHandles(
+  sourceNode: FlowNode | undefined,
+  targetNode: FlowNode | undefined,
+): { sourceHandle: string; targetHandle: string } {
+  if (!sourceNode || !targetNode) {
+    return { sourceHandle: 'source-bottom', targetHandle: 'target-top' };
+  }
+  const dx = targetNode.position.x - sourceNode.position.x;
+  const dy = targetNode.position.y - sourceNode.position.y;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    return dx > 0
+      ? { sourceHandle: 'source-right', targetHandle: 'target-left' }
+      : { sourceHandle: 'source-left', targetHandle: 'target-right' };
+  }
+  return dy > 0
+    ? { sourceHandle: 'source-bottom', targetHandle: 'target-top' }
+    : { sourceHandle: 'source-top', targetHandle: 'target-bottom' };
+}
+
 function diagramToEdges(diagram: FlowchartDiagram): Edge[] {
-  return diagram.edges.map(edge => ({
-    id: edge.id,
-    source: edge.from,
-    target: edge.to,
-    type: 'flow',
-    data: {
-      text: edge.text,
-      edgeType: edge.type,
-      length: edge.length,
-    } as unknown as Record<string, unknown>,
-    animated: edge.type.includes('dotted'),
-  }));
+  const nodeMap = new Map(diagram.nodes.map(n => [n.id, n]));
+  return diagram.edges.map(edge => {
+    const sourceHandle = edge.sourceHandle ?? computeHandles(nodeMap.get(edge.from), nodeMap.get(edge.to)).sourceHandle;
+    const targetHandle = edge.targetHandle ?? computeHandles(nodeMap.get(edge.from), nodeMap.get(edge.to)).targetHandle;
+    return {
+      id: edge.id,
+      source: edge.from,
+      target: edge.to,
+      sourceHandle,
+      targetHandle,
+      type: 'flow',
+      data: {
+        text: edge.text,
+        edgeType: edge.type,
+        length: edge.length,
+      } as unknown as Record<string, unknown>,
+      animated: edge.type.includes('dotted'),
+    };
+  });
 }
 
 export const useFlowchartStore = create<FlowchartState & FlowchartActions>((set, get) => ({
   diagram: {
     type: 'flowchart',
+    keyword: 'flowchart',
     direction: 'TB',
     nodes: [],
     edges: [],
@@ -184,7 +214,7 @@ export const useFlowchartStore = create<FlowchartState & FlowchartActions>((set,
     });
   },
 
-  addEdge: (from, to, type = 'arrow', text) => {
+  addEdge: (from, to, type = 'arrow', text, sourceHandle, targetHandle) => {
     const { diagram, pushHistory } = get();
     pushHistory();
 
@@ -194,6 +224,8 @@ export const useFlowchartStore = create<FlowchartState & FlowchartActions>((set,
       to,
       type,
       text,
+      sourceHandle,
+      targetHandle,
     };
 
     const newDiagram = {
@@ -347,7 +379,14 @@ export const useFlowchartStore = create<FlowchartState & FlowchartActions>((set,
 
   onConnect: (connection) => {
     if (connection.source && connection.target) {
-      get().addEdge(connection.source, connection.target, 'arrow');
+      get().addEdge(
+        connection.source,
+        connection.target,
+        'arrow',
+        undefined,
+        connection.sourceHandle ?? undefined,
+        connection.targetHandle ?? undefined,
+      );
     }
   },
 

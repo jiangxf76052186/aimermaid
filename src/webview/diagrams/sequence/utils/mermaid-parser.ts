@@ -15,8 +15,8 @@ import { SYMBOL_TO_MESSAGE_TYPE } from '@shared/constants';
 const BLOCK_START_REGEX = /^(loop|alt|opt|par|critical|break)\b\s*(.*)$/i;
 const BLOCK_ELSE_REGEX = /^else\s*(.*)?$/i;
 const BLOCK_END_REGEX = /^end$/i;
-const MESSAGE_REGEX = /^(\w+)(-->>|-->|--\)|--x|->>|->|-\)|-x)(\+|-)?(\w+)\s*:\s*(.*)$/;
-const NOTE_REGEX = /^Note\s+(left of|right of|over)\s+(\w+(?:,\s*\w+)?)\s*:\s*(.*)$/i;
+const MESSAGE_REGEX = /^([\w\u4e00-\u9fff]+)(-->>|-->|--\)|--x|->>|->|-\)|-x)(\+|-)?([\w\u4e00-\u9fff]+)\s*:\s*(.*)$/;
+const NOTE_REGEX = /^Note\s+(left of|right of|over)\s+([\w\u4e00-\u9fff]+(?:,\s*[\w\u4e00-\u9fff]+)?)\s*:\s*(.*)$/i;
 
 interface ParseContext {
   lines: string[];
@@ -260,7 +260,7 @@ export function parseMermaidSequence(code: string): SequenceDiagram {
     }
 
     // Participant declarations
-    const participantMatch = line.match(/^(participant|actor)\s+(\w+)(?:\s+as\s+"?([^"]+)"?)?$/);
+    const participantMatch = line.match(/^(participant|actor)\s+([\w\u4e00-\u9fff]+)(?:\s+as\s+"?([^"]+)"?)?$/);
     if (participantMatch) {
       const [, typeStr, id, alias] = participantMatch;
       const type = typeStr as ParticipantType;

@@ -106,6 +106,10 @@ export interface FlowEdge {
   type: EdgeType;
   /** 最小长度，额外的连字符数量（可选） */
   length?: number;
+  /** 源节点连接锚点 Handle ID（如 source-top, source-right 等） */
+  sourceHandle?: string;
+  /** 目标节点连接锚点 Handle ID（如 target-top, target-left 等） */
+  targetHandle?: string;
 }
 
 /**
@@ -151,6 +155,8 @@ export interface ClassDef {
 export interface FlowchartDiagram {
   /** 图表类型标识 */
   type: 'flowchart';
+  /** 原始关键字：flowchart 或 graph，用于保存时保留原始语法 */
+  keyword: 'flowchart' | 'graph';
   /** 图表整体方向 */
   direction: Direction;
   /** 所有节点 */

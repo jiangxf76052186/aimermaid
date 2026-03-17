@@ -135,7 +135,7 @@ export function parseStateDiagram(code: string): StateDiagram {
       continue;
     }
 
-    const compositeMatch = line.match(/^state\s+(?:"([^"]+)"\s+as\s+)?(\w+)\s*\{$/);
+    const compositeMatch = line.match(/^state\s+(?:"([^"]+)"\s+as\s+)?([\w\u4e00-\u9fff]+)\s*\{$/);
     if (compositeMatch) {
       const description = compositeMatch[1];
       const name = compositeMatch[2];
@@ -149,31 +149,31 @@ export function parseStateDiagram(code: string): StateDiagram {
       continue;
     }
 
-    const stateDescAsMatch = line.match(/^state\s+"([^"]+)"\s+as\s+(\w+)$/);
+    const stateDescAsMatch = line.match(/^state\s+"([^"]+)"\s+as\s+([\w\u4e00-\u9fff]+)$/);
     if (stateDescAsMatch) {
       getOrCreateState(stateDescAsMatch[2], 'normal', stateDescAsMatch[1]);
       continue;
     }
 
-    const stateColonMatch = line.match(/^(\w+)\s*:\s*(.+)$/);
+    const stateColonMatch = line.match(/^([\w\u4e00-\u9fff]+)\s*:\s*(.+)$/);
     if (stateColonMatch) {
       getOrCreateState(stateColonMatch[1], 'normal', stateColonMatch[2]);
       continue;
     }
 
-    const stateTypeMatch = line.match(/^state\s+(\w+)\s+<<(choice|fork|join)>>$/);
+    const stateTypeMatch = line.match(/^state\s+([\w\u4e00-\u9fff]+)\s+<<(choice|fork|join)>>$/);
     if (stateTypeMatch) {
       getOrCreateState(stateTypeMatch[1], stateTypeMatch[2] as StateType);
       continue;
     }
     
-    const stateSimpleMatch = line.match(/^state\s+(\w+)$/);
+    const stateSimpleMatch = line.match(/^state\s+([\w\u4e00-\u9fff]+)$/);
     if (stateSimpleMatch) {
       getOrCreateState(stateSimpleMatch[1]);
       continue;
     }
 
-    const transitionMatch = line.match(/^(\[\*\]|\w+)\s*-->\s*(\[\*\]|\w+)(?:\s*:\s*(.+))?$/);
+    const transitionMatch = line.match(/^(\[\*\]|[\w\u4e00-\u9fff]+)\s*-->\s*(\[\*\]|[\w\u4e00-\u9fff]+)(?:\s*:\s*(.+))?$/);
     if (transitionMatch) {
       const fromName = transitionMatch[1];
       const toName = transitionMatch[2];
@@ -207,7 +207,7 @@ export function parseStateDiagram(code: string): StateDiagram {
       continue;
     }
 
-    const singleLineNoteMatch = line.match(/^note\s+(left|right)\s+of\s+(\w+)\s*:\s*(.+)$/);
+    const singleLineNoteMatch = line.match(/^note\s+(left|right)\s+of\s+([\w\u4e00-\u9fff]+)\s*:\s*(.+)$/);
     if (singleLineNoteMatch) {
       const position = singleLineNoteMatch[1] as NotePosition;
       const stateId = singleLineNoteMatch[2];
@@ -225,7 +225,7 @@ export function parseStateDiagram(code: string): StateDiagram {
       continue;
     }
 
-    const multiLineNoteStartMatch = line.match(/^note\s+(left|right)\s+of\s+(\w+)$/);
+    const multiLineNoteStartMatch = line.match(/^note\s+(left|right)\s+of\s+([\w\u4e00-\u9fff]+)$/);
     if (multiLineNoteStartMatch) {
       const position = multiLineNoteStartMatch[1] as NotePosition;
       const stateId = multiLineNoteStartMatch[2];
@@ -242,7 +242,7 @@ export function parseStateDiagram(code: string): StateDiagram {
       continue;
     }
 
-    const classDefMatch = line.match(/^classDef\s+(\w+)\s+(.+)$/);
+    const classDefMatch = line.match(/^classDef\s+([\w\u4e00-\u9fff]+)\s+(.+)$/);
     if (classDefMatch) {
       const name = classDefMatch[1];
       const stylesStr = classDefMatch[2];
@@ -262,7 +262,7 @@ export function parseStateDiagram(code: string): StateDiagram {
       continue;
     }
 
-    const classApplyMatch = line.match(/^class\s+(\w+)\s+(\w+)$/);
+    const classApplyMatch = line.match(/^class\s+([\w\u4e00-\u9fff]+)\s+([\w\u4e00-\u9fff]+)$/);
     if (classApplyMatch) {
       diagram.classAssignments.push({
         stateId: classApplyMatch[1],
@@ -272,37 +272,142 @@ export function parseStateDiagram(code: string): StateDiagram {
     }
   }
 
-  layoutStates(diagram.states);
+  layoutStates(diagram);
 
   return diagram;
 }
 
-function layoutStates(states: State[]) {
-  const COL_WIDTH = 250;
-  const ROW_HEIGHT = 150;
-  const COLS = 4;
+/**
+ * 基于拓扑排序的状态布局：按 transition 方向从起始到结束依次排列
+ */
+function layoutStates(diagram: StateDiagram) {
+  const COL_GAP = 250;
+  const ROW_GAP = 150;
+  const START_X = 50;
+  const START_Y = 50;
 
-  const topLevelStates = states.filter(s => !s.parentId);
+  // 分别布局顶层状态和复合状态的子状态
+  const topLevelStates = diagram.states.filter(s => !s.parentId);
+  layoutStateGroup(topLevelStates, diagram.transitions, diagram.direction, START_X, START_Y, COL_GAP, ROW_GAP);
+
+  const compositeStates = diagram.states.filter(s => s.type === 'composite');
+  for (const parent of compositeStates) {
+    const children = diagram.states.filter(s => s.parentId === parent.id);
+    if (children.length > 0) {
+      layoutStateGroup(children, diagram.transitions, diagram.direction, START_X, START_Y, COL_GAP, ROW_GAP);
+    }
+  }
+}
+
+function layoutStateGroup(
+  states: State[],
+  allTransitions: StateDiagram['transitions'],
+  direction: StateDiagram['direction'],
+  startX: number,
+  startY: number,
+  colGap: number,
+  rowGap: number
+) {
+  if (states.length === 0) return;
+
+  const stateIds = new Set(states.map(s => s.id));
   
-  topLevelStates.forEach((state, index) => {
-    const row = Math.floor(index / COLS);
-    const col = index % COLS;
-    state.position = {
-      x: col * COL_WIDTH + 50,
-      y: row * ROW_HEIGHT + 50,
-    };
-  });
+  // 只考虑组内的 transitions
+  const transitions = allTransitions.filter(t => stateIds.has(t.from) && stateIds.has(t.to));
 
-  const compositeStates = states.filter(s => s.type === 'composite');
-  compositeStates.forEach(parent => {
-    const children = states.filter(s => s.parentId === parent.id);
-    children.forEach((child, index) => {
-      const row = Math.floor(index / 2);
-      const col = index % 2;
-      child.position = {
-        x: col * COL_WIDTH + 50,
-        y: row * ROW_HEIGHT + 50,
-      };
+  if (transitions.length === 0) {
+    // 没有 transition，按 order 排成一行
+    states.forEach((state, index) => {
+      if (direction === 'LR' || direction === 'RL') {
+        state.position = { x: startX + index * colGap, y: startY };
+      } else {
+        state.position = { x: startX + index * colGap, y: startY };
+      }
     });
-  });
+    return;
+  }
+
+  // 构建邻接表和入度表
+  const adjList = new Map<string, string[]>();
+  const inDegree = new Map<string, number>();
+  
+  for (const state of states) {
+    adjList.set(state.id, []);
+    inDegree.set(state.id, 0);
+  }
+  
+  for (const t of transitions) {
+    const neighbors = adjList.get(t.from);
+    if (neighbors) {
+      neighbors.push(t.to);
+    }
+    inDegree.set(t.to, (inDegree.get(t.to) || 0) + 1);
+  }
+
+  // BFS 拓扑排序，按层级分组
+  const layers: string[][] = [];
+  const visited = new Set<string>();
+  
+  // 找到所有入度为 0 的起始节点
+  let queue: string[] = [];
+  for (const state of states) {
+    if ((inDegree.get(state.id) || 0) === 0) {
+      queue.push(state.id);
+      visited.add(state.id);
+    }
+  }
+
+  while (queue.length > 0) {
+    layers.push([...queue]);
+    const nextQueue: string[] = [];
+    for (const nodeId of queue) {
+      for (const neighbor of (adjList.get(nodeId) || [])) {
+        if (!visited.has(neighbor)) {
+          const newDegree = (inDegree.get(neighbor) || 1) - 1;
+          inDegree.set(neighbor, newDegree);
+          if (newDegree === 0) {
+            nextQueue.push(neighbor);
+            visited.add(neighbor);
+          }
+        }
+      }
+    }
+    queue = nextQueue;
+  }
+
+  // 处理未访问的节点（可能存在环）
+  for (const state of states) {
+    if (!visited.has(state.id)) {
+      if (layers.length === 0) {
+        layers.push([]);
+      }
+      layers[layers.length - 1].push(state.id);
+    }
+  }
+
+  const stateMap = new Map(states.map(s => [s.id, s]));
+  const isHorizontal = direction === 'LR' || direction === 'RL';
+
+  // 按层级分配位置
+  for (let layerIdx = 0; layerIdx < layers.length; layerIdx++) {
+    const layer = layers[layerIdx];
+    for (let nodeIdx = 0; nodeIdx < layer.length; nodeIdx++) {
+      const state = stateMap.get(layer[nodeIdx]);
+      if (!state) continue;
+
+      if (isHorizontal) {
+        // LR: 层级 → x 方向, 同层 → y 方向
+        state.position = {
+          x: startX + layerIdx * colGap,
+          y: startY + nodeIdx * rowGap,
+        };
+      } else {
+        // TB/TD: 层级 → y 方向, 同层 → x 方向
+        state.position = {
+          x: startX + nodeIdx * colGap,
+          y: startY + layerIdx * rowGap,
+        };
+      }
+    }
+  }
 }

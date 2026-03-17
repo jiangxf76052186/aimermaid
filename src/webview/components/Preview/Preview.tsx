@@ -1,14 +1,35 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useEditorStore } from '../../stores/editorStore';
 import { useDiagramStore } from '../../stores/diagramStore';
+import { useFlowchartStore } from '../../diagrams/flowchart/store';
+import { useStateStore } from '../../diagrams/stateDiagram/store';
 
 const Preview: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const toMermaid = useDiagramStore((s) => s.toMermaid);
-  const diagram = useDiagramStore((s) => s.diagram);
+  const activeDiagramType = useEditorStore((s) => s.activeDiagramType);
+
+  // 根据图表类型选择对应的 store
+  const sequenceDiagram = useDiagramStore((s) => s.diagram);
+  const sequenceToMermaid = useDiagramStore((s) => s.toMermaid);
+  const flowchartDiagram = useFlowchartStore((s) => s.diagram);
+  const flowchartToMermaid = useFlowchartStore((s) => s.toMermaid);
+  const stateDiagram = useStateStore((s) => s.diagram);
+  const stateToMermaid = useStateStore((s) => s.toMermaid);
+
+  // 根据激活的图表类型获取对应的数据
+  const diagram = 
+    activeDiagramType === 'sequence' ? sequenceDiagram :
+    activeDiagramType === 'flowchart' ? flowchartDiagram :
+    stateDiagram;
+
+  const toMermaid = 
+    activeDiagramType === 'sequence' ? sequenceToMermaid :
+    activeDiagramType === 'flowchart' ? flowchartToMermaid :
+    stateToMermaid;
 
   useEffect(() => {
     mermaid.initialize({
@@ -24,8 +45,12 @@ const Preview: React.FC = () => {
 
       const code = toMermaid();
       console.log('[AIMermaid] Preview mermaid code:', code);
-      if (!code.trim() || diagram.participants.length === 0) {
-        containerRef.current.innerHTML = '<div class="text-gray-500 text-sm">添加参与者开始绘图</div>';
+      
+      // 空态判断：检查生成的 mermaid 代码是否有实质内容
+      // 不再依赖 diagram.participants（时序图特有）
+      const isEmpty = !code.trim() || code.split('\n').length <= 1;
+      if (isEmpty) {
+        containerRef.current.innerHTML = '<div class="text-gray-500 text-sm">添加元素开始绘图</div>';
         setError(null);
         return;
       }

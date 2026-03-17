@@ -1,14 +1,20 @@
 import React from 'react';
 import { Save, X, Undo2, Redo2 } from 'lucide-react';
 import { useDiagramStore } from '../../stores/diagramStore';
+import { useEditorStore } from '../../stores/editorStore';
+import { getActiveStore } from '../../hooks/useActiveStore';
 import { vscodeApi } from '../../utils/vscode-api';
 
 const TopBar: React.FC = () => {
-  const { toMermaid, undo, redo, history, historyIndex, recalculateAllBlockContents } = useDiagramStore();
+  const activeDiagramType = useEditorStore((s) => s.activeDiagramType);
+  const store = getActiveStore(activeDiagramType);
+  const { toMermaid, undo, redo, history, historyIndex } = store();
 
   const handleSave = () => {
     console.log('[AIMermaid] === SAVE START ===');
-    recalculateAllBlockContents();
+    if (activeDiagramType === 'sequence') {
+      useDiagramStore.getState().recalculateAllBlockContents();
+    }
     const code = toMermaid();
     console.log('[AIMermaid] Generated code:', code);
     console.log('[AIMermaid] === SAVE END ===');
@@ -21,6 +27,13 @@ const TopBar: React.FC = () => {
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
+
+  const titleMap: Record<string, string> = {
+    sequence: '时序图',
+    flowchart: '流程图',
+    state: '状态图',
+  };
+  const title = titleMap[activeDiagramType] || activeDiagramType;
 
   return (
     <div className="h-12 bg-vscode-input-bg border-b border-vscode-border flex items-center justify-between px-4">
@@ -63,7 +76,7 @@ const TopBar: React.FC = () => {
       </div>
 
       <div className="text-sm text-gray-400">
-        AI Mermaid Editor - 时序图
+        AI Mermaid Editor - {title}
       </div>
     </div>
   );
